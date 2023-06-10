@@ -21,6 +21,7 @@ end
 require("astronvim.utils").conditional_func(astronvim.user_opts("polish", nil, false), true)
 
 -- Surpress multiple buffers warning
+--[[
 local notify = vim.notify
 vim.notify = function(msg, ...)
   if msg:match("warning: multiple different client offset_encodings") then
@@ -29,6 +30,9 @@ vim.notify = function(msg, ...)
 
   notify(msg, ...)
 end
+]]
+--
+-- If you are using Clang LSP, check: <https://github.com/neovim/nvim-lspconfig/issues/2184#issuecomment-1511154286>
 
 require("custom.mappings")
 require("custom.settings")

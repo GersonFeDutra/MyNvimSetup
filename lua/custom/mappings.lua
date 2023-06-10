@@ -1,13 +1,7 @@
 local utils = require "astronvim.utils"
 local maps = { i = {}, n = {}, v = {}, t = {} }
 
--- Moving lines is a special character
---maps.n["<C-down>"] = { "mz:m+<CR>`z==", desc = "move line down" }
---maps.n["<C-up>"] = { "mz:m-2<CR>`z==", desc = "move line up" }
---maps.i["<C-down>"] = { "<Esc>:m+<CR>==gi", desc = "move line down" }
---maps.i["<C-up>"] = { "<Esc>:m-2<CR>==gi", desc = "move line up" }
---maps.v["<C-down>"] = { ":m'>+<CR>gv=`<my`>mzgv`yo`z", desc = "move line down" }
---maps.v["<C-up>"] = { ":m'<-2<CR>gv=`>my`<mzgv`yo`z", desc = "move line up" }
+-- The Primeagen recommendations
 
 -- Open here
 maps.n["<F4>"] = { ":! ./run.sh<CR>", silent = true, desc = "Script to run file" }
@@ -40,7 +34,8 @@ maps.v["<leader>y"] = { '"+y', desc = "Yank to clipboard" }
 
 maps.n["<leader>Y"] = { '"+Y', desc = "Yank to clipboard" }
 
-maps.n["<leader>d"] = { '"_d', desc = "Delete preserved" }
+-- Captalized to avoid conflict with the debugger option from AstroNvim
+maps.n["<leader>D"] = { '"_d', desc = "Delete preserved" }
 maps.v["<leader>d"] = { '"_d', desc = "Delete preserved" }
 
 -- This is going to get me cancelled
@@ -63,7 +58,7 @@ maps.n["<leader>j"] = { "<cmd>lprev<CR>zz" }
 --
 
 -- Renaming current word
-maps.n["<leader>s"] = { ":%s/\\<<C-r><C-w>\\>/<C-r><C-w>/gI<Left><Left><Left>", desc = "Rename current" }
+maps.n["<leader>ss"] = { ":%s/\\<<C-r><C-w>\\>/<C-r><C-w>/gI<Left><Left><Left>", desc = "Rename current" }
 maps.n["<leader>x"] = { "<cmd>!chmod +x %<CR>", silent = true, desc = "Turn runnable" }
 
 --[[
@@ -77,5 +72,12 @@ maps.n["<leader>mr"] = { "<cmd>CellularAutomaton make_it_rain<CR>" };
 --    vim.cmd("so")
 --end)
 --}
+
+-- My Custom Shortcuts
+
+-- todo-comments
+maps.n["<leader>fT"] = { ":TodoTelescope<CR>", silent = true, desc = "Find todos" }
+-- SideBar
+maps.n["<leader>uB"] = { ":SidebarNvimToggle<CR>", silent = true, desc = "Toggle sidebar" }
 
 utils.set_mappings(astronvim.user_opts("mappings", maps))
