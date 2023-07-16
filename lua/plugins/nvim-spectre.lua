@@ -5,7 +5,7 @@ return {
     keys = {
         {
             prefix,
-            desc = require("astronvim.utils").get_icon("FolderEmpty", 1, true) .. "Search / Replace",
+            desc = require("astronvim.utils").get_icon("MagicWand", 1, true) .. "Search / Replace",
             mode = { "n", "x" }
         },
         {

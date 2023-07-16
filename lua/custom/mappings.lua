@@ -1,4 +1,5 @@
 local utils = require "astronvim.utils"
+local is_available = utils.is_available
 local maps = { i = {}, n = {}, v = {}, t = {} }
 
 -- The Primeagen recommendations
@@ -78,6 +79,23 @@ maps.n["<leader>mr"] = { "<cmd>CellularAutomaton make_it_rain<CR>" };
 -- todo-comments
 maps.n["<leader>fT"] = { ":TodoTelescope<CR>", silent = true, desc = "Find todos" }
 -- SideBar
-maps.n["<leader>uB"] = { ":SidebarNvimToggle<CR>", silent = true, desc = "Toggle sidebar" }
+local toggle_side_bar = { ":SidebarNvimToggle<CR>", silent = true, desc = "Toggle sidebar" }
+maps.n["<leader>uB"] = toggle_side_bar
+maps.n["<C-B>"] = toggle_side_bar
+
+-- Save
+-- Session Manager
+if is_available "neovim-session-manager" then
+    maps.n["<C-s>"] = { "<cmd>w<cr><cmd>SessionManager! save_current_session<cr>", desc = "Save this session" }
+end
+if is_available "resession.nvim" then
+    maps.n["<C-s>"] = {
+        function()
+            require("resession").save_tab()
+            require("resession").save()
+        end,
+        desc = "Save this session"
+    }
+end
 
 utils.set_mappings(astronvim.user_opts("mappings", maps))

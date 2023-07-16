@@ -16,7 +16,10 @@ The number can be omitted.
 
 ## Basic vim
 
-Check this [reference](https://phoenixnap.com/kb/vim-commands-cheat-sheet).
+Recommendations:
+
+* [Reference](https://phoenixnap.com/kb/vim-commands-cheat-sheet).
+* [Learn vim the smart way](https://learnvim.irian.to/)
 
 ### Normal Mode
 
@@ -71,6 +74,22 @@ Check this [reference](https://phoenixnap.com/kb/vim-commands-cheat-sheet).
 * `zz` - Focus center
 * `zt` - Focus top
 * `zb` - Focus bottom
+
+##### *Fold*
+
+[Read this for reference](https://www.vimfromscratch.com/articles/vim-folding)
+
+* `zf` - Marks a piece of text as foldable
+* `zo` - Open (unfold) at the cursor
+* `zc` - Close (fold) at the cursor
+* `za` - Toggle folding
+
+* `zm` - Increases fold level by 1
+* `zr` - Decreases the foldlevel by one.
+* `zO` - Opens (unfolds) all at the cursor
+
+* `zM` - Fold all
+* `zR` - Unfold all (fold level to 0)
 
 #### Searching in file
 

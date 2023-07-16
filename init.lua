@@ -36,3 +36,4 @@ end
 
 require("custom.mappings")
 require("custom.settings")
+require("custom.dap")
