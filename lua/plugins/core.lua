@@ -21,7 +21,7 @@ return {
   },
   {
     "s1n7ax/nvim-window-picker",
-    name = "window-picker",
+    main = "window-picker",
     opts = { picker_config = { statusline_winbar_picker = { use_winbar = "smart" } } },
   },
   {
@@ -30,7 +30,7 @@ return {
   },
   {
     "windwp/nvim-autopairs",
-    event = "InsertEnter",
+    event = "User AstroFile",
     opts = {
       check_ts = true,
       ts_config = { java = false },
@@ -104,6 +104,16 @@ return {
     "akinsho/toggleterm.nvim",
     cmd = { "ToggleTerm", "TermExec" },
     opts = {
+      highlights = {
+        Normal = { link = "Normal" },
+        NormalNC = { link = "NormalNC" },
+        NormalFloat = { link = "NormalFloat" },
+        FloatBorder = { link = "FloatBorder" },
+        StatusLine = { link = "StatusLine" },
+        StatusLineNC = { link = "StatusLineNC" },
+        WinBar = { link = "WinBar" },
+        WinBarNC = { link = "WinBarNC" },
+      },
       size = 10,
       on_create = function()
         vim.opt.foldcolumn = "0"
@@ -112,10 +122,7 @@ return {
       open_mapping = [[<F7>]],
       shading_factor = 2,
       direction = "float",
-      float_opts = {
-        border = "curved",
-        highlights = { border = "Normal", background = "Normal" },
-      },
+      float_opts = { border = "rounded" },
     },
   },
 }

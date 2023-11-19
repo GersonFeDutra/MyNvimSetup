@@ -2,7 +2,6 @@ local augroup = vim.api.nvim_create_augroup
 local autocmd = vim.api.nvim_create_autocmd
 local cmd = vim.api.nvim_create_user_command
 local namespace = vim.api.nvim_create_namespace
-local luv = vim.uv or vim.loop -- TODO: REMOVE WHEN DROPPING SUPPORT FOR Neovim v0.9
 
 local utils = require "astronvim.utils"
 local is_available = utils.is_available
@@ -14,6 +13,36 @@ vim.on_key(function(char)
     if vim.opt.hlsearch:get() ~= new_hlsearch then vim.opt.hlsearch = new_hlsearch end
   end
 end, namespace "auto_hlsearch")
+
+autocmd("BufReadPre", {
+  desc = "Disable certain functionality on very large files",
+  group = augroup("large_buf", { clear = true }),
+  callback = function(args)
+    local ok, stats = pcall(vim.loop.fs_stat, vim.api.nvim_buf_get_name(args.buf))
+    vim.b[args.buf].large_buf = (ok and stats and stats.size > vim.g.max_file.size)
+      or vim.api.nvim_buf_line_count(args.buf) > vim.g.max_file.lines
+  end,
+})
+
+local terminal_settings_group = augroup("terminal_settings", { clear = true })
+-- TODO: drop when dropping support for Neovim v0.9
+if vim.fn.has "nvim-0.9.4" == 0 then
+  -- HACK: Disable custom statuscolumn for terminals because truncation/wrapping bug
+  -- https://github.com/neovim/neovim/issues/25472
+  autocmd("TermOpen", {
+    group = terminal_settings_group,
+    desc = "Disable custom statuscolumn for terminals to fix neovim/neovim#25472",
+    callback = function() vim.opt_local.statuscolumn = nil end,
+  })
+end
+autocmd("TermOpen", {
+  group = terminal_settings_group,
+  desc = "Disable foldcolumn and signcolumn for terinals",
+  callback = function()
+    vim.opt_local.foldcolumn = "0"
+    vim.opt_local.signcolumn = "no"
+  end,
+})
 
 local bufferline_group = augroup("bufferline", { clear = true })
 autocmd({ "BufAdd", "BufEnter", "TabNewEntered" }, {
@@ -36,7 +65,7 @@ autocmd({ "BufAdd", "BufEnter", "TabNewEntered" }, {
     astroevent "BufsUpdated"
   end,
 })
-autocmd("BufDelete", {
+autocmd({ "BufDelete", "TermClose" }, {
   desc = "Update buffers when deleting buffers",
   group = bufferline_group,
   callback = function(args)
@@ -70,20 +99,20 @@ local view_group = augroup("auto_view", { clear = true })
 autocmd({ "BufWinLeave", "BufWritePost", "WinLeave" }, {
   desc = "Save view with mkview for real files",
   group = view_group,
-  callback = function(event)
-    if vim.b[event.buf].view_activated then vim.cmd.mkview { mods = { emsg_silent = true } } end
+  callback = function(args)
+    if vim.b[args.buf].view_activated then vim.cmd.mkview { mods = { emsg_silent = true } } end
   end,
 })
 autocmd("BufWinEnter", {
   desc = "Try to load file view if available and enable view saving for real files",
   group = view_group,
-  callback = function(event)
-    if not vim.b[event.buf].view_activated then
-      local filetype = vim.api.nvim_get_option_value("filetype", { buf = event.buf })
-      local buftype = vim.api.nvim_get_option_value("buftype", { buf = event.buf })
+  callback = function(args)
+    if not vim.b[args.buf].view_activated then
+      local filetype = vim.api.nvim_get_option_value("filetype", { buf = args.buf })
+      local buftype = vim.api.nvim_get_option_value("buftype", { buf = args.buf })
       local ignore_filetypes = { "gitcommit", "gitrebase", "svg", "hgcommit" }
       if buftype == "" and filetype and filetype ~= "" and not vim.tbl_contains(ignore_filetypes, filetype) then
-        vim.b[event.buf].view_activated = true
+        vim.b[args.buf].view_activated = true
         vim.cmd.loadview { mods = { emsg_silent = true } }
       end
     end
@@ -93,12 +122,12 @@ autocmd("BufWinEnter", {
 autocmd("BufWinEnter", {
   desc = "Make q close help, man, quickfix, dap floats",
   group = augroup("q_close_windows", { clear = true }),
-  callback = function(event)
-    local buftype = vim.api.nvim_get_option_value("buftype", { buf = event.buf })
-    if vim.tbl_contains({ "help", "nofile", "quickfix" }, buftype) then
+  callback = function(args)
+    local buftype = vim.api.nvim_get_option_value("buftype", { buf = args.buf })
+    if vim.tbl_contains({ "help", "nofile", "quickfix" }, buftype) and vim.fn.maparg("q", "n") == "" then
       vim.keymap.set("n", "q", "<cmd>close<cr>", {
         desc = "Close window",
-        buffer = event.buf,
+        buffer = args.buf,
         silent = true,
         nowait = true,
       })
@@ -151,24 +180,29 @@ autocmd("BufEnter", {
 })
 
 if is_available "alpha-nvim" then
-  autocmd({ "User", "BufEnter" }, {
-    desc = "Disable status and tablines for alpha",
+  autocmd({ "User", "BufWinEnter" }, {
+    desc = "Disable status, tablines, and cmdheight for alpha",
     group = augroup("alpha_settings", { clear = true }),
-    callback = function(event)
+    callback = function(args)
       if
         (
-          (event.event == "User" and event.file == "AlphaReady")
-          or (event.event == "BufEnter" and vim.api.nvim_get_option_value("filetype", { buf = event.buf }) == "alpha")
+          (args.event == "User" and args.file == "AlphaReady")
+          or (args.event == "BufWinEnter" and vim.api.nvim_get_option_value("filetype", { buf = args.buf }) == "alpha")
         ) and not vim.g.before_alpha
       then
-        vim.g.before_alpha = { showtabline = vim.opt.showtabline:get(), laststatus = vim.opt.laststatus:get() }
-        vim.opt.showtabline, vim.opt.laststatus = 0, 0
+        vim.g.before_alpha = {
+          showtabline = vim.opt.showtabline:get(),
+          laststatus = vim.opt.laststatus:get(),
+          cmdheight = vim.opt.cmdheight:get(),
+        }
+        vim.opt.showtabline, vim.opt.laststatus, vim.opt.cmdheight = 0, 0, 0
       elseif
         vim.g.before_alpha
-        and event.event == "BufEnter"
-        and vim.api.nvim_get_option_value("buftype", { buf = event.buf }) ~= "nofile"
+        and args.event == "BufWinEnter"
+        and vim.api.nvim_get_option_value("buftype", { buf = args.buf }) ~= "nofile"
       then
-        vim.opt.laststatus, vim.opt.showtabline = vim.g.before_alpha.laststatus, vim.g.before_alpha.showtabline
+        vim.opt.laststatus, vim.opt.showtabline, vim.opt.cmdheight =
+          vim.g.before_alpha.laststatus, vim.g.before_alpha.showtabline, vim.g.before_alpha.cmdheight
         vim.g.before_alpha = nil
       end
     end,
@@ -177,8 +211,15 @@ if is_available "alpha-nvim" then
     desc = "Start Alpha when vim is opened with no arguments",
     group = augroup("alpha_autostart", { clear = true }),
     callback = function()
-      local should_skip = false
-      if vim.fn.argc() > 0 or vim.fn.line2byte(vim.fn.line "$") ~= -1 or not vim.o.modifiable then
+      local should_skip
+      local lines = vim.api.nvim_buf_get_lines(0, 0, 2, false)
+      if
+        vim.fn.argc() > 0 -- don't start when opening a file
+        or #lines > 1 -- don't open if current buffer has more than 1 line
+        or (#lines == 1 and lines[1]:len() > 0) -- don't open the current buffer if it has anything on the first line
+        or #vim.tbl_filter(function(bufnr) return vim.bo[bufnr].buflisted end, vim.api.nvim_list_bufs()) > 1 -- don't open if any listed buffers
+        or not vim.o.modifiable -- don't open if not modifiable
+      then
         should_skip = true
       else
         for _, arg in pairs(vim.v.argv) do
@@ -188,7 +229,24 @@ if is_available "alpha-nvim" then
           end
         end
       end
-      if not should_skip then require("alpha").start(true, require("alpha").default_config) end
+      if should_skip then return end
+      require("alpha").start(true, require("alpha").default_config)
+      vim.schedule(function() vim.cmd.doautocmd "FileType" end)
+    end,
+  })
+end
+
+-- HACK: indent blankline doesn't properly refresh when scrolling the window
+-- remove when fixed upstream: https://github.com/lukas-reineke/indent-blankline.nvim/issues/489
+if is_available "indent-blankline.nvim" then
+  autocmd("WinScrolled", {
+    desc = "Refresh indent blankline on window scroll",
+    group = augroup("indent_blankline_refresh_scroll", { clear = true }),
+    callback = function()
+      -- TODO: remove neovim version check when dropping support for Neovim 0.8
+      if vim.fn.has "nvim-0.9" ~= 1 or (vim.v.event.all and vim.v.event.all.leftcol ~= 0) then
+        pcall(vim.cmd.IndentBlanklineRefresh)
+      end
     end,
   })
 end
@@ -217,7 +275,7 @@ if is_available "neo-tree.nvim" then
       if package.loaded["neo-tree"] then
         vim.api.nvim_del_augroup_by_name "neotree_start"
       else
-        local stats = luv.fs_stat(vim.api.nvim_buf_get_name(0))
+        local stats = (vim.uv or vim.loop).fs_stat(vim.api.nvim_buf_get_name(0)) -- TODO: REMOVE vim.loop WHEN DROPPING SUPPORT FOR Neovim v0.9
         if stats and stats.type == "directory" then
           vim.api.nvim_del_augroup_by_name "neotree_start"
           require "neo-tree"
@@ -226,16 +284,22 @@ if is_available "neo-tree.nvim" then
     end,
   })
   autocmd("TermClose", {
-    pattern = "*lazygit",
-    desc = "Refresh Neo-Tree git when closing lazygit",
-    group = augroup("neotree_git_refresh", { clear = true }),
+    pattern = "*lazygit*",
+    desc = "Refresh Neo-Tree when closing lazygit",
+    group = augroup("neotree_refresh", { clear = true }),
     callback = function()
-      if package.loaded["neo-tree.sources.git_status"] then require("neo-tree.sources.git_status").refresh() end
+      local manager_avail, manager = pcall(require, "neo-tree.sources.manager")
+      if manager_avail then
+        for _, source in ipairs { "filesystem", "git_status", "document_symbols" } do
+          local module = "neo-tree.sources." .. source
+          if package.loaded[module] then manager.refresh(require(module).name) end
+        end
+      end
     end,
   })
 end
 
-autocmd({ "VimEnter", "ColorScheme" }, {
+autocmd("ColorScheme", {
   desc = "Load custom highlights from user configuration",
   group = augroup("astronvim_highlights", { clear = true }),
   callback = function()
@@ -246,7 +310,7 @@ autocmd({ "VimEnter", "ColorScheme" }, {
         end
       end
     end
-    astroevent "ColorScheme"
+    astroevent("ColorScheme", false)
   end,
 })
 
@@ -254,11 +318,12 @@ autocmd({ "BufReadPost", "BufNewFile", "BufWritePost" }, {
   desc = "AstroNvim user events for file detection (AstroFile and AstroGitFile)",
   group = augroup("file_user_events", { clear = true }),
   callback = function(args)
-    if not (vim.fn.expand "%" == "" or vim.api.nvim_get_option_value("buftype", { buf = args.buf }) == "nofile") then
+    local current_file = vim.fn.resolve(vim.fn.expand "%")
+    if not (current_file == "" or vim.api.nvim_get_option_value("buftype", { buf = args.buf }) == "nofile") then
       astroevent "File"
       if
         require("astronvim.utils.git").file_worktree()
-        or utils.cmd({ "git", "-C", vim.fn.expand "%:p:h", "rev-parse" }, false)
+        or utils.cmd({ "git", "-C", vim.fn.fnamemodify(current_file, ":p:h"), "rev-parse" }, false)
       then
         astroevent "GitFile"
         vim.api.nvim_del_augroup_by_name "file_user_events"
