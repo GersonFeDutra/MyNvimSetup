@@ -10,6 +10,9 @@ Like plugins as cmake-tools. I am also using it for editing scripting files
 (bash, lua, python) as usual, and more. It may be adaptable to your workflow
 if you follow the AstroNVim framework conventions.
 
+Install your plugins (LSP, DAP, linters, and formatters) with `:Mason`
+> I am specially usign clangd, codelldb and cpptools.
+
 ## Issues
 
 * If you are using Clang LSP [check this issue](https://github.com/neovim/nvim-lspconfig/issues/2184#issuecomment-1511154286)

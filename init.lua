@@ -39,3 +39,5 @@ end
 require("custom.mappings")
 require("custom.settings")
 require("custom.dap")
+-- vim.opt.guifont='FontAwesome'
+-- vim.g.guifont='FontAwesome'
