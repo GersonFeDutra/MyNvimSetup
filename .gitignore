@@ -47,3 +47,8 @@ tags
 
 # JetBrains
 .idea
+
+# Assets
+*.png
+*.jpg
+*.pdf

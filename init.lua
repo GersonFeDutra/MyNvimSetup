@@ -41,3 +41,8 @@ require("custom.settings")
 require("custom.dap")
 -- vim.opt.guifont='FontAwesome'
 -- vim.g.guifont='FontAwesome'
+vim.api.nvim_create_autocmd("FileType", {
+  --group    = "custom_buffer",
+  pattern  = "*",
+  callback = function() vim.opt.formatoptions:remove { 'c', 'r', 'o' } end
+})
