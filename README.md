@@ -16,6 +16,8 @@ Install your plugins (LSP, DAP, linters, and formatters) with `:Mason`
 ## Issues
 
 * If you are using Clang LSP [check this issue](https://github.com/neovim/nvim-lspconfig/issues/2184#issuecomment-1511154286)
+* Make sure you have ripgrep installed otherwise Telescope fuzzy finder may not work.
+* Check if the `fd` command works
 
 ## Shortcuts guide
 
